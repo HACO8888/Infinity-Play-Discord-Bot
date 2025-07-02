@@ -1,4 +1,6 @@
 const { Events, EmbedBuilder } = require("discord.js");
+const channel = require("../channel.json");
+const { ButtonBuilder } = require("discord.js");
 
 module.exports = {
   name: Events.MessageCreate,
@@ -17,12 +19,10 @@ module.exports = {
         for (const match of matches) {
           const code = match[1]; // 提取邀請碼
 
-          console.log(`Found invite code: ${code}`);
 
           // 檢查邀請碼格式是否有效
           const validCodePattern = /^[0-9a-zA-Z]+$/;
           if (!validCodePattern.test(code)) {
-            console.log(`Invalid code format: ${code}`);
             continue;
           }
 
@@ -33,7 +33,6 @@ module.exports = {
 
             // 檢查是否為本伺服器的邀請
             if (inviteCodes.includes(code)) {
-              console.log(`Code ${code} is from this server, allowing`);
               continue;
             }
 
@@ -50,8 +49,6 @@ module.exports = {
               }
             }
 
-            // 如果到這裡，表示是外部邀請連結，需要刪除
-            console.log(`Deleting message with external invite code: ${code}`);
             await message.delete();
 
             const NotifyEmbed = new EmbedBuilder()
@@ -77,23 +74,32 @@ module.exports = {
                   value: "```" + message.content + "```",
                   inline: false,
                 }
-              );
+              )
+              .setColor("#1cd3aa")
+              .setTimestamp()
+              .setFooter({
+                text: "無限遊玩服務",
+                iconURL: "https://cdn.lazco.dev/play-logo.png",
+              });
 
-            // 如果伺服器有自訂 URL，發送到指定頻道
-            if (message.guild.vanityURLCode) {
-              const channel = message.guild.channels.cache.get("967374280381849601");
-              if (channel) {
-                await channel.send({ embeds: [NotifyEmbed] });
-              } else {
-                await message.channel.send({ embeds: [NotifyEmbed] });
-              }
+            const KickButton = new ButtonBuilder()
+              .setCustomId(`kick-${message.author.id}`)
+              .setLabel("Kick")
+              .setStyle("Primary");
+
+            const BanButton = new ButtonBuilder()
+              .setCustomId(`ban-${message.author.id}`)
+              .setLabel("Ban")
+              .setStyle("Danger")
+
+            const sendChannel = message.guild.channels.cache.get(channel[message.guild.id]);
+            if (sendChannel) {
+              await sendChannel.send({ embeds: [NotifyEmbed], components: [{ type: 1, components: [KickButton, BanButton] }] });
             } else {
-              await message.channel.send({ embeds: [NotifyEmbed] });
+              await message.channel.send({ embeds: [NotifyEmbed], components: [{ type: 1, components: [KickButton, BanButton] }] });
             }
 
-            // 找到一個外部邀請就刪除訊息，不需要繼續檢查其他的
             break;
-
           } catch (error) {
             console.error('Error processing invite:', error);
           }
