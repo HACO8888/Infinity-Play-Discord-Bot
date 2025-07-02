@@ -20,14 +20,17 @@ const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
       `Started refreshing ${commands.length} application (/) commands.`
     );
 
-    const data = await rest.put(
-      Routes.applicationGuildCommands(process.env.ID, "806477754681262100"),
-      { body: commands }
-    );
+    for (const guildId of process.env.GUILD_ID.split(",")) {
+      console.log(`Refreshing commands for guild: ${guildId}`);
 
-    console.log(
-      `Successfully reloaded ${data.length} application (/) commands.`
-    );
+      const data = await rest.put(
+        Routes.applicationGuildCommands(process.env.ID, guildId),
+        { body: commands }
+      );
+      console.log(
+        `Successfully reloaded ${data.length} application (/) commands.`
+      );
+    }
   } catch (error) {
     console.error(error);
   }

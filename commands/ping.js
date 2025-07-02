@@ -15,7 +15,7 @@ module.exports = {
       .setTimestamp()
       .setFooter({
         text: "無限遊玩服務",
-        iconURL: "https://cdn.haco.tw/images/Play.png",
+        iconURL: "https://cdn.lazco.dev/play-logo.png",
       });
     await interaction.reply("<a:loading:1057261323735547934>正在讀取...");
     await wait(2000);
