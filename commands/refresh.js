@@ -57,7 +57,7 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setTitle('🔄 重新載入完成')
-                .setColor(errorCount > 0 ? 0xFF6B6B : 0x00FF00)
+                .setColor("#1cd3aa")
                 .setDescription(results.join('\n'))
                 .addFields(
                     { name: '✅ 成功', value: `${refreshedCount}`, inline: true },

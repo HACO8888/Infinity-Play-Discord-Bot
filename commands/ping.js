@@ -7,7 +7,7 @@ module.exports = {
     .setDescription("取得機器人延遲！"),
   async execute(interaction) {
     const PingEmbed = new EmbedBuilder()
-      .setColor("#34E718")
+      .setColor("#1cd3aa")
       .setTitle("機器人延遲")
       .setDescription(
         `<a:check:1057263917732220980> 延遲 \`${interaction.client.ws.ping}\` (毫秒)`

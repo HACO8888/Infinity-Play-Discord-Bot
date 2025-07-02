@@ -17,6 +17,9 @@ importers:
       dotenv:
         specifier: ^16.0.3
         version: 16.6.1
+      ms:
+        specifier: ^2.1.3
+        version: 2.1.3
       node-fetch:
         specifier: ^3.2.6
         version: 3.3.2
@@ -107,6 +110,9 @@ packages:
 
   magic-bytes.js@1.12.1:
     resolution: {integrity: sha512-ThQLOhN86ZkJ7qemtVRGYM+gRgR8GEXNli9H/PMvpnZsE44Xfh3wx9kGJaldg314v85m+bFW6WBMaVHJc/c3zA==}
+
+  ms@2.1.3:
+    resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
@@ -255,6 +261,8 @@ snapshots:
   lodash@4.17.21: {}
 
   magic-bytes.js@1.12.1: {}
+
+  ms@2.1.3: {}
 
   node-domexception@1.0.0: {}
 
