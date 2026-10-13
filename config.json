@@ -2,11 +2,13 @@
   "guilds": {
     "827865729285881868": {
       "alertChannelId": "967374280381849601",
-      "logChannelId": null
+      "logChannelId": "1559582466317222098",
+      "persistRoleIds": []
     },
     "806477754681262100": {
       "alertChannelId": "1389956163243741344",
-      "logChannelId": null
+      "logChannelId": null,
+      "persistRoleIds": []
     }
   }
 }

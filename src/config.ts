@@ -9,12 +9,24 @@ export interface AutomodConfig {
   scamText: DetectionAction;
   mentionSpam: DetectionAction;
   flood: DetectionAction;
+  /** 以下需要 Server Members intent */
+  impersonation: DetectionAction;
+  raid: DetectionAction;
+  /** 需要 Presence intent */
+  customStatus: DetectionAction;
   /** 單則訊息提及幾位使用者／身分組以上算大量提及 */
   maxMentions: number;
   floodMessages: number;
   floodWindowSeconds: number;
   duplicateMessages: number;
   duplicateWindowSeconds: number;
+  /** 帳號建立未滿幾天算新帳號 */
+  newAccountDays: number;
+  /** raidWindowSeconds 內有幾人加入算突襲 */
+  raidJoins: number;
+  raidWindowSeconds: number;
+  /** 額外要保護、不允許別人冒用的名稱（伺服器擁有者與管理員會自動保護） */
+  protectedNames: string[];
   /** 這些身分組不受自動偵測（有管理訊息權限的人本來就會略過） */
   exemptRoleIds: string[];
   /** 允許的邀請碼或第三方邀請網址（本伺服器的邀請會自動判斷，不用填） */
@@ -24,6 +36,8 @@ export interface AutomodConfig {
 export interface GuildConfig {
   alertChannelId: string | null;
   logChannelId: string | null;
+  /** 成員退出再加入時要自動補回的處罰身分組 */
+  persistRoleIds: string[];
   automod: AutomodConfig;
 }
 
@@ -37,11 +51,18 @@ export const DEFAULT_AUTOMOD: AutomodConfig = {
   scamText: "alert",
   mentionSpam: "alert",
   flood: "alert",
+  impersonation: "alert",
+  raid: "alert",
+  customStatus: "alert",
   maxMentions: 5,
   floodMessages: 6,
   floodWindowSeconds: 5,
   duplicateMessages: 3,
   duplicateWindowSeconds: 60,
+  newAccountDays: 7,
+  raidJoins: 10,
+  raidWindowSeconds: 60,
+  protectedNames: [],
   exemptRoleIds: [],
   allowedInvites: [],
 };
@@ -59,13 +80,30 @@ function snowflakeOrNull(value: unknown, path: string): string | null {
   return value;
 }
 
+function snowflakeList(value: unknown, path: string): string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || !value.every((v) => typeof v === "string" && SNOWFLAKE.test(v))) {
+    fail(path, "必須是 Discord ID 字串陣列");
+  }
+  return value;
+}
+
 function parseAutomod(raw: unknown, path: string): AutomodConfig {
   if (raw === undefined) return { ...DEFAULT_AUTOMOD };
   if (typeof raw !== "object" || raw === null) fail(path, "必須是物件");
   const input = raw as Record<string, unknown>;
   const result: AutomodConfig = { ...DEFAULT_AUTOMOD };
 
-  for (const key of ["invites", "scamLinks", "scamText", "mentionSpam", "flood"] as const) {
+  for (const key of [
+    "invites",
+    "scamLinks",
+    "scamText",
+    "mentionSpam",
+    "flood",
+    "impersonation",
+    "raid",
+    "customStatus",
+  ] as const) {
     const value = input[key];
     if (value === undefined) continue;
     if (!ACTIONS.includes(value as DetectionAction)) fail(`${path}.${key}`, `必須是 ${ACTIONS.join(" / ")}`);
@@ -77,13 +115,16 @@ function parseAutomod(raw: unknown, path: string): AutomodConfig {
     "floodWindowSeconds",
     "duplicateMessages",
     "duplicateWindowSeconds",
+    "newAccountDays",
+    "raidJoins",
+    "raidWindowSeconds",
   ] as const) {
     const value = input[key];
     if (value === undefined) continue;
     if (!Number.isInteger(value) || (value as number) < 1) fail(`${path}.${key}`, "必須是正整數");
     result[key] = value as number;
   }
-  for (const key of ["exemptRoleIds", "allowedInvites"] as const) {
+  for (const key of ["exemptRoleIds", "allowedInvites", "protectedNames"] as const) {
     const value = input[key];
     if (value === undefined) continue;
     if (!Array.isArray(value) || !value.every((v) => typeof v === "string")) fail(`${path}.${key}`, "必須是字串陣列");
@@ -108,6 +149,7 @@ export function parseConfig(raw: unknown, guildIdEnv?: string): BotConfig {
     guilds.set(id, {
       alertChannelId: snowflakeOrNull(entry.alertChannelId, `guilds.${id}.alertChannelId`),
       logChannelId: snowflakeOrNull(entry.logChannelId, `guilds.${id}.logChannelId`),
+      persistRoleIds: snowflakeList(entry.persistRoleIds, `guilds.${id}.persistRoleIds`),
       automod: parseAutomod(entry.automod, `guilds.${id}.automod`),
     });
   }
@@ -120,7 +162,15 @@ export function parseConfig(raw: unknown, guildIdEnv?: string): BotConfig {
 
   const filtered = new Map<string, GuildConfig>();
   for (const id of enabled) {
-    filtered.set(id, guilds.get(id) ?? { alertChannelId: null, logChannelId: null, automod: { ...DEFAULT_AUTOMOD } });
+    filtered.set(
+      id,
+      guilds.get(id) ?? {
+        alertChannelId: null,
+        logChannelId: null,
+        persistRoleIds: [],
+        automod: { ...DEFAULT_AUTOMOD },
+      },
+    );
   }
   return { guilds: filtered };
 }
