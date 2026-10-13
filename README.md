@@ -99,4 +99,4 @@ Dokploy 以 `Dockerfile` 建置；也可以用 `docker compose up -d --build`（
 
 ## 隱私權
 
-見 [PRIVACY.md](PRIVACY.md)。
+見 [PRIVACY.md](PRIVACY.md)；服務條款見 [TERMS.md](TERMS.md)。
