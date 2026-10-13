@@ -1,9 +1,16 @@
 require("dotenv").config();
 const fs = require("node:fs");
 const path = require("node:path");
-const { Client, Collection } = require("discord.js");
+const { Client, Collection, GatewayIntentBits } = require("discord.js");
 
-const client = new Client({ intents: [3276799] });
+// Message Content 只用於 events/messageCreate.js 的外部邀請連結偵測
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
 
 client.commands = new Collection();
 
