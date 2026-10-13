@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.7
-FROM node:24-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --prod --frozen-lockfile
 
-FROM node:24-alpine
+FROM node:26-alpine
 # node:sqlite 仍會印出 ExperimentalWarning
 ENV NODE_ENV=production NODE_OPTIONS=--disable-warning=ExperimentalWarning DATABASE_PATH=/app/data/bot.sqlite
 WORKDIR /app
