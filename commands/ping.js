@@ -10,7 +10,7 @@ module.exports = {
       .setColor("#1cd3aa")
       .setTitle("機器人延遲")
       .setDescription(
-        `<a:check:1057263917732220980> 延遲 \`${interaction.client.ws.ping}\` (毫秒)`
+        `<a:check:1057263917732220980> 延遲 \`${interaction.client.ws.ping}\` (毫秒)`,
       )
       .setTimestamp()
       .setFooter({
