@@ -18,6 +18,19 @@
 
 擁有「管理訊息」權限的成員與 `exemptRoleIds` 內的身分組不會被檢查。
 
+### 成員相關（需要 Server Members intent，`EXTRA_INTENTS` 含 `members`）
+
+| 功能 | 說明 | 預設 |
+|---|---|---|
+| 加入／離開紀錄 | 記錄到 log 頻道，帳號未滿 `newAccountDays`（7）天標示為新帳號 | 開 |
+| 防突襲 | `raidWindowSeconds`（60）秒內 `raidJoins`（10）人加入時通報，按鈕可暫停邀請 24 小時或把驗證等級調到最高 | 只通報 |
+| 冒充偵測 | 名稱與擁有者、管理員（曾發言的管理員會自動記住）或 `protectedNames` 幾乎相同，或自稱管理員、官方、客服，或名稱含詐騙網址／聯絡方式 | 只通報 |
+| 處罰身分組防逃避 | `persistRoleIds` 內的身分組在成員退出再加入時自動補回（存於 SQLite） | 設定後啟用 |
+
+### 自訂狀態（需要 Presence intent，`EXTRA_INTENTS` 含 `presences`）
+
+自訂狀態含詐騙網址、外部邀請或詐騙話術時通報管理員。只看自訂狀態文字，不讀取上線狀態或遊戲活動，也不保存。
+
 ### 管理紀錄（mod log）
 
 設定 `logChannelId` 後，會把訊息刪除、訊息編輯（前後內容）、大量刪除，以及踢出／封鎖／禁言（來自審核日誌）記錄到該頻道。
@@ -57,6 +70,8 @@
 |---|---|
 | `TOKEN` | Bot token |
 | `GUILD_ID` | 啟用的伺服器 ID，逗號分隔；只會處理這些伺服器的訊息 |
+| `EXTRA_INTENTS` | 選用特權 intent：`members`、`presences`（逗號分隔）；審核未通過時移除即可 |
+| `DATABASE_PATH` | SQLite 路徑，Docker 預設 `/app/data/bot.sqlite`（請把 `/app/data` 掛成 volume） |
 
 ## 機器人需要的權限
 
@@ -64,7 +79,7 @@
 
 ## Gateway Intents
 
-`Guilds`、`GuildMessages`、`GuildModeration`，以及特權 intent **`MessageContent`**（偵測可疑訊息與管理紀錄）。不使用 Server Members 與 Presence。
+`Guilds`、`GuildMessages`、`GuildModeration`，以及特權 intent **`MessageContent`**（偵測可疑訊息與管理紀錄）。依 `EXTRA_INTENTS` 另外啟用 **`GuildMembers`**（成員相關功能）與 **`GuildPresences`**（自訂狀態偵測）。
 
 ## 開發
 
