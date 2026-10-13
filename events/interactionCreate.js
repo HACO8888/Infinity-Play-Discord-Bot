@@ -1,4 +1,71 @@
-const { Events } = require("discord.js");
+const {
+  Events,
+  MessageFlags,
+  PermissionFlagsBits,
+  ActionRowBuilder,
+  ButtonBuilder,
+} = require("discord.js");
+
+const MODERATION_ACTIONS = {
+  kick: {
+    permission: PermissionFlagsBits.KickMembers,
+    noPermission: "您沒有踢出成員的權限!",
+    reason: "因傳送非本群邀請連結被踢出伺服器",
+    done: (tag) => `已將 ${tag} 踢出伺服器`,
+  },
+  ban: {
+    permission: PermissionFlagsBits.BanMembers,
+    noPermission: "您沒有封鎖成員的權限!",
+    reason: "因傳送非本群邀請連結被永久禁止進入伺服器",
+    done: (tag) => `已將 ${tag} 禁止進入伺服器`,
+  },
+};
+
+// 處理完後把原本通報訊息上的按鈕停用，避免重複操作
+function disableButtons(message) {
+  const rows = message.components.map((row) =>
+    new ActionRowBuilder().addComponents(
+      row.components.map((component) => ButtonBuilder.from(component).setDisabled(true)),
+    ),
+  );
+  return message.edit({ components: rows });
+}
+
+async function handleModerationButton(interaction, actionName, userId) {
+  const action = MODERATION_ACTIONS[actionName];
+
+  if (!interaction.memberPermissions?.has(action.permission)) {
+    await interaction.reply({ content: action.noPermission, flags: MessageFlags.Ephemeral });
+    return;
+  }
+
+  // 用 REST 抓單一成員，不需要 Guild Members intent；成員已離開時會是 null
+  const member = await interaction.guild.members.fetch(userId).catch(() => null);
+
+  if (actionName === "kick") {
+    if (!member) {
+      await interaction.reply({ content: "找不到該用戶，可能已經離開伺服器", flags: MessageFlags.Ephemeral });
+      return;
+    }
+    if (!member.kickable) {
+      await interaction.reply({ content: "機器人無法踢出該用戶（身分組可能比機器人高）", flags: MessageFlags.Ephemeral });
+      return;
+    }
+    await member.kick(action.reason);
+    await interaction.reply({ content: action.done(member.user.tag) });
+  }
+  else {
+    if (member && !member.bannable) {
+      await interaction.reply({ content: "機器人無法封鎖該用戶（身分組可能比機器人高）", flags: MessageFlags.Ephemeral });
+      return;
+    }
+    // 成員已離開也能用 ID 封鎖
+    await interaction.guild.members.ban(userId, { reason: action.reason });
+    await interaction.reply({ content: action.done(member?.user.tag ?? `<@${userId}>`) });
+  }
+
+  await disableButtons(interaction.message).catch(() => null);
+}
 
 module.exports = {
   name: Events.InteractionCreate,
@@ -9,14 +76,15 @@ module.exports = {
 
       if (!command) {
         console.error(
-          `No command matching ${interaction.commandName} was found.`
+          `No command matching ${interaction.commandName} was found.`,
         );
         return;
       }
 
       try {
         await command.execute(interaction);
-      } catch (error) {
+      }
+      catch (error) {
         console.error(`Error executing ${interaction.commandName}`);
         console.error(error);
       }
@@ -24,57 +92,25 @@ module.exports = {
     }
 
     // 處理 Button 點擊
-    if (interaction.isButton()) {
-      const buttonId = interaction.customId;
+    if (interaction.isButton() && interaction.inGuild()) {
+      const [actionName, userId] = interaction.customId.split("-");
+      if (!Object.hasOwn(MODERATION_ACTIONS, actionName) || !userId) return;
 
       try {
-        if (buttonId.startsWith('kick-') || buttonId.startsWith('ban-')) {
-          // 這裡可以處理 kick 和 ban 按鈕的邏輯
-          const userId = buttonId.split('-')[1];
-          const user = interaction.guild.members.cache.get(userId);
-          // 確認使用者有沒有剔除或禁止的權限
-          if (!interaction.member.permissions.has('KickMembers') && !interaction.member.permissions.has('BanMembers')) {
-            await interaction.reply({
-              content: '您沒有權限執行踢人或禁止人的操作!',
-              ephemeral: true
-            });
-            return;
-          }
-          if (!user) {
-            await interaction.reply({
-              content: '找不到該用戶',
-              ephemeral: true
-            });
-            return;
-          }
-          if (buttonId.startsWith('kick-')) {
-            await user.kick('因傳送非本群邀請連結被踢出伺服器');
-            await interaction.reply({
-              content: `已將 ${user.user.tag} 踢出伺服器`,
-              ephemeral: false
-            });
-          } else if (buttonId.startsWith('ban-')) {
-            await user.ban({ reason: '因傳送非本群邀請連結被永久禁止進入伺服器' });
-            await interaction.reply({
-              content: `已將 ${user.user.tag} 禁止進入伺服器`,
-              ephemeral: false
-            });
-          }
-          return;
-        }
-      } catch (error) {
-        console.error(`Error handling button ${buttonId}:`);
+        await handleModerationButton(interaction, actionName, userId);
+      }
+      catch (error) {
+        console.error(`Error handling button ${interaction.customId}:`);
         console.error(error);
 
         // 如果還沒有回應過，就發送錯誤訊息
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({
-            content: '處理按鈕時發生錯誤',
-            ephemeral: true
+            content: "處理按鈕時發生錯誤",
+            flags: MessageFlags.Ephemeral,
           });
         }
       }
-      return;
     }
   },
 };
