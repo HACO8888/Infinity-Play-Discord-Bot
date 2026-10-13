@@ -1,7 +1,9 @@
 import os from "node:os";
-import { EmbedBuilder, SlashCommandBuilder, version } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder, version } from "discord.js";
 import { BRAND_COLOR, FOOTER } from "../brand.ts";
 import type { Command } from "../types.ts";
+
+export const PRIVACY_URL = "https://github.com/HACO8888/Infinity-Play-Discord-Bot/blob/main/PRIVACY.md";
 
 function formatDuration(seconds: number): string {
   const d = Math.floor(seconds / 86400);
@@ -37,6 +39,9 @@ export default {
       .setColor(BRAND_COLOR)
       .setTimestamp()
       .setFooter(FOOTER);
-    await interaction.reply({ embeds: [embed] });
+    const links = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder().setLabel("隱私權政策").setEmoji("🔒").setStyle(ButtonStyle.Link).setURL(PRIVACY_URL),
+    );
+    await interaction.reply({ embeds: [embed], components: [links] });
   },
 } satisfies Command;
