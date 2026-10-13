@@ -1,0 +1,4 @@
+# 新版套件發佈 3 天後才安裝，降低供應鏈攻擊（被盜帳號發佈惡意版本）的風險
+minimumReleaseAge: 4320
+# 只允許這些套件執行安裝腳本
+onlyBuiltDependencies: []
