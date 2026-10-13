@@ -1,5 +1,7 @@
 import { loadConfig } from "./config.ts";
+import { JoinTracker } from "./moderation/raid.ts";
 import { Cooldown, RateTracker } from "./moderation/rateTracker.ts";
+import { RoleStore } from "./store.ts";
 
 /** 每個 shard 程序各自一份的執行期狀態 */
 export const config = loadConfig();
@@ -22,3 +24,27 @@ export function markDeletedByAutomod(messageId: string): void {
   deletedByAutomod.add(messageId);
   setTimeout(() => deletedByAutomod.delete(messageId), 60_000).unref();
 }
+
+/** 選用的特權 intent（審核未通過時移除環境變數即可，bot 仍可運作） */
+const extra = new Set(
+  (process.env.EXTRA_INTENTS ?? "")
+    .split(",")
+    .map((v) => v.trim().toLowerCase())
+    .filter(Boolean),
+);
+export const membersEnabled = extra.has("members");
+export const presencesEnabled = extra.has("presences");
+
+export const joinTracker = new JoinTracker();
+export const roleStore = new RoleStore(process.env.DATABASE_PATH ?? "data/bot.sqlite");
+
+/** 曾在伺服器發言的管理員顯示名稱，用來偵測冒充 */
+export const staffNames = new Map<string, Set<string>>();
+export function rememberStaffName(guildId: string, name: string): void {
+  const names = staffNames.get(guildId) ?? new Set<string>();
+  staffNames.set(guildId, names);
+  if (names.size < 500) names.add(name);
+}
+
+/** 同一位使用者的同一個名稱或狀態只通報一次（一天內） */
+export const alreadyReported = new Cooldown(24 * 60 * 60);

@@ -1,5 +1,5 @@
 import { type Message, PermissionFlagsBits } from "discord.js";
-import { config, floodCooldown, markDeletedByAutomod, rateTracker } from "../runtime.ts";
+import { config, floodCooldown, markDeletedByAutomod, rateTracker, rememberStaffName } from "../runtime.ts";
 import { alertChannel, buildAlert, messageText } from "./alerts.ts";
 import { createInviteResolver } from "./inviteResolver.ts";
 import { normalizeText } from "./normalize.ts";
@@ -19,7 +19,11 @@ export async function inspectMessage(message: Message, { edited = false } = {}):
   const guildConfig = config.guilds.get(message.guildId);
   if (!guildConfig) return;
   const { automod } = guildConfig;
-  if (isExempt(message, automod.exemptRoleIds)) return;
+  if (isExempt(message, automod.exemptRoleIds)) {
+    // 記住管理員的名稱，之後才能偵測別人冒充
+    if (message.member) rememberStaffName(message.guildId, message.member.displayName);
+    return;
+  }
 
   const text = messageText(message);
   const findings: Finding[] = await scanContent(

@@ -1,5 +1,6 @@
 import { Events, MessageFlags } from "discord.js";
 import { handleModerationButton } from "../moderation/actions.ts";
+import { handleRaidButton } from "../moderation/raidAlert.ts";
 import { defineEvent } from "../types.ts";
 
 export default defineEvent({
@@ -11,7 +12,7 @@ export default defineEvent({
         if (!command) return;
         await command.execute(interaction);
       } else if (interaction.isButton() && interaction.inCachedGuild()) {
-        await handleModerationButton(interaction);
+        if (!(await handleRaidButton(interaction))) await handleModerationButton(interaction);
       }
     } catch (error) {
       console.error("Interaction failed:", error);

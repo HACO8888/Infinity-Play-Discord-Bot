@@ -3,9 +3,11 @@ import {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
+  type Guild,
   type GuildTextBasedChannel,
   type Message,
   type MessageCreateOptions,
+  type User,
 } from "discord.js";
 import { ALERT_COLOR, FOOTER } from "../brand.ts";
 import { config } from "../runtime.ts";
@@ -34,25 +36,34 @@ export function parseActionId(customId: string) {
 }
 
 export function actionRows(message: { channelId: string; id: string; author: { id: string } }, deleted: boolean) {
-  const id = (action: ModAction) => actionId(action, message.channelId, message.id, message.author.id);
-  return [
-    new ActionRowBuilder<ButtonBuilder>().addComponents(
+  return [memberActionRow(message.author.id, message.channelId, message.id, deleted ? "deleted" : "present")];
+}
+
+/** messageState 為 none 時代表通報對象是成員本身（名稱、狀態），沒有訊息可刪 */
+export function memberActionRow(
+  userId: string,
+  channelId = "0",
+  messageId = "0",
+  messageState: "present" | "deleted" | "none" = "none",
+) {
+  const id = (action: ModAction) => actionId(action, channelId, messageId, userId);
+  const row = new ActionRowBuilder<ButtonBuilder>();
+  if (messageState !== "none") {
+    row.addComponents(
       new ButtonBuilder()
         .setCustomId(id("delete"))
-        .setLabel(deleted ? "已自動刪除" : "刪除訊息")
+        .setLabel(messageState === "deleted" ? "已自動刪除" : "刪除訊息")
         .setEmoji("🗑️")
         .setStyle(ButtonStyle.Secondary)
-        .setDisabled(deleted),
-      new ButtonBuilder().setCustomId(id("timeout")).setLabel("禁言 1 天").setEmoji("🔇").setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId(id("kick")).setLabel("踢出").setEmoji("👢").setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId(id("ban")).setLabel("封鎖").setEmoji("🔨").setStyle(ButtonStyle.Danger),
-      new ButtonBuilder()
-        .setCustomId(id("dismiss"))
-        .setLabel("誤判，忽略")
-        .setEmoji("✅")
-        .setStyle(ButtonStyle.Success),
-    ),
-  ];
+        .setDisabled(messageState === "deleted"),
+    );
+  }
+  return row.addComponents(
+    new ButtonBuilder().setCustomId(id("timeout")).setLabel("禁言 1 天").setEmoji("🔇").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(id("kick")).setLabel("踢出").setEmoji("👢").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(id("ban")).setLabel("封鎖").setEmoji("🔨").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(id("dismiss")).setLabel("誤判，忽略").setEmoji("✅").setStyle(ButtonStyle.Success),
+  );
 }
 
 /** 訊息本身 + 轉發的訊息內容 */
@@ -98,6 +109,45 @@ export function buildAlert(message: Message<true>, findings: readonly Finding[],
 export async function alertChannel(message: Message<true>): Promise<GuildTextBasedChannel | null> {
   const channelId = config.guilds.get(message.guildId)?.alertChannelId;
   if (!channelId) return message.channel;
-  const channel = await message.guild.channels.fetch(channelId).catch(() => null);
+  return configuredAlertChannel(message.guild);
+}
+
+/** 不是由訊息觸發的通報（成員名稱、狀態、突襲）只發到設定的通報頻道 */
+export async function configuredAlertChannel(guild: Guild): Promise<GuildTextBasedChannel | null> {
+  const channelId = config.guilds.get(guild.id)?.alertChannelId;
+  if (!channelId) return null;
+  const channel = await guild.channels.fetch(channelId).catch(() => null);
   return channel?.isTextBased() ? channel : null;
+}
+
+/** 成員本身（名稱、自訂狀態）的通報 */
+export function buildMemberAlert(
+  user: User,
+  title: string,
+  findings: readonly { label: string; summary: string }[],
+  content?: string,
+) {
+  const embed = new EmbedBuilder()
+    .setColor(ALERT_COLOR)
+    .setTitle(title)
+    .setAuthor({ name: `${user.tag}（${user.id}）`, iconURL: user.displayAvatarURL() })
+    .addFields(
+      { name: "成員", value: `<@${user.id}>`, inline: true },
+      { name: "帳號建立", value: `<t:${Math.floor(user.createdTimestamp / 1000)}:R>`, inline: true },
+      {
+        name: "偵測結果",
+        value: findings
+          .map((f) => `• **${f.label}**：${f.summary}`)
+          .join("\n")
+          .slice(0, 1024),
+      },
+    )
+    .setTimestamp()
+    .setFooter(FOOTER);
+  if (content !== undefined) embed.addFields({ name: "內容", value: codeBlock(content) });
+  return {
+    embeds: [embed],
+    components: [memberActionRow(user.id)],
+    allowedMentions: { parse: [] },
+  } satisfies MessageCreateOptions;
 }
