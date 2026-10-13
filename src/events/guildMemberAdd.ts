@@ -17,9 +17,9 @@ export default defineEvent({
     const isNew = age < automod.newAccountDays;
 
     // 處罰身分組防逃避：退出再加入時補回
-    const persisted = roleStore
-      .list(member.guild.id, member.id)
-      .filter((id) => guildConfig.persistRoleIds.includes(id));
+    const persisted = (roleStore?.list(member.guild.id, member.id) ?? []).filter((id) =>
+      guildConfig.persistRoleIds.includes(id),
+    );
     if (persisted.length > 0) {
       await member.roles
         .add(persisted, "退出後重新加入，補回處罰身分組")

@@ -12,10 +12,10 @@ export default defineEvent({
     if (!guildConfig) return;
 
     // 記錄處罰身分組的增減（舊成員資料不在快取時無法比對，以目前狀態為準）
-    for (const roleId of guildConfig.persistRoleIds) {
+    for (const roleId of roleStore ? guildConfig.persistRoleIds : []) {
       const has = newMember.roles.cache.has(roleId);
-      if (has) roleStore.add(newMember.guild.id, newMember.id, roleId);
-      else if (!oldMember.partial) roleStore.remove(newMember.guild.id, newMember.id, roleId);
+      if (has) roleStore?.add(newMember.guild.id, newMember.id, roleId);
+      else if (!oldMember.partial) roleStore?.remove(newMember.guild.id, newMember.id, roleId);
     }
 
     if (!oldMember.partial && oldMember.nickname !== newMember.nickname) {

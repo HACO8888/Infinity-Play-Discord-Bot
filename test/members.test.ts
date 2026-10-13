@@ -58,8 +58,22 @@ describe("JoinTracker", () => {
 });
 
 describe("RoleStore", () => {
+  const key = Buffer.alloc(32, 7).toString("base64");
+
+  it("rejects keys of the wrong length", () => {
+    assert.throws(() => new RoleStore(":memory:", "c2hvcnQ="), /32 bytes/);
+  });
+
+  it("never writes user or role IDs in plain text", () => {
+    const store = new RoleStore(":memory:", key);
+    store.add("827865729285881868", "508964901415550976", "1113764486030041108");
+    const dump = JSON.stringify(store.rawRows());
+    for (const id of ["827865729285881868", "508964901415550976", "1113764486030041108"]) assert.ok(!dump.includes(id));
+    store.close();
+  });
+
   it("adds, lists and removes persisted roles", () => {
-    const store = new RoleStore(":memory:");
+    const store = new RoleStore(":memory:", key);
     store.add("g", "u", "r1");
     store.add("g", "u", "r1");
     store.add("g", "u", "r2");

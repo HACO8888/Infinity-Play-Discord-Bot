@@ -71,6 +71,7 @@
 | `TOKEN` | Bot token |
 | `GUILD_ID` | 啟用的伺服器 ID，逗號分隔；只會處理這些伺服器的訊息 |
 | `EXTRA_INTENTS` | 選用特權 intent：`members`、`presences`（逗號分隔）；審核未通過時移除即可 |
+| `ROLE_STORE_KEY` | 處罰身分組資料的加密金鑰（`openssl rand -base64 32`）；未設定時不啟用該功能 |
 | `DATABASE_PATH` | SQLite 路徑，Docker 預設 `/app/data/bot.sqlite`（請把 `/app/data` 掛成 volume） |
 
 ## 機器人需要的權限

@@ -36,7 +36,11 @@ export const membersEnabled = extra.has("members");
 export const presencesEnabled = extra.has("presences");
 
 export const joinTracker = new JoinTracker();
-export const roleStore = new RoleStore(process.env.DATABASE_PATH ?? "data/bot.sqlite");
+/** 沒有設定 ROLE_STORE_KEY 時不啟用處罰身分組功能，也不建立資料庫 */
+export const roleStore = process.env.ROLE_STORE_KEY
+  ? new RoleStore(process.env.DATABASE_PATH ?? "data/bot.sqlite", process.env.ROLE_STORE_KEY)
+  : null;
+if (membersEnabled && !roleStore) console.warn("ROLE_STORE_KEY is not set; punishment-role persistence is disabled");
 
 /** 曾在伺服器發言的管理員顯示名稱，用來偵測冒充 */
 export const staffNames = new Map<string, Set<string>>();

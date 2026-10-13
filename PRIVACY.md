@@ -17,7 +17,7 @@ The 無限遊玩 bot ("the bot") is a Discord moderation bot operated by the 無
 | 審核日誌事件（踢出、封鎖、禁言）Audit log events (kick, ban, timeout) | 管理紀錄 Moderation log | 以 Discord 訊息形式留在紀錄頻道 Kept as a Discord message in the log channel |
 | 成員加入／離開、帳號建立日期、暱稱變更 Member joins/leaves, account creation date, nickname changes | 管理紀錄、新帳號警示、偵測短時間大量加入（突襲）Moderation log, new-account warnings, raid detection | 以 Discord 訊息形式留在紀錄頻道；突襲判斷只在記憶體保留最近 1 分鐘的加入時間 Kept as a Discord message in the log channel; raid detection keeps join times in memory for about one minute |
 | 成員的使用者名稱、顯示名稱與伺服器暱稱 Members' username, display name and server nickname | 偵測冒充管理員／官方客服，或名稱中含詐騙網址與聯絡方式 Detect impersonation of staff or official support, and scam links or contact handles in names | 只在記憶體比對；被偵測到時以 Discord 訊息形式通報到管理員頻道 Checked in memory; flagged names are reported to the staff channel |
-| 處罰身分組（使用者 ID 與身分組 ID）Punishment roles (user ID and role ID) | 成員退出再加入時自動補回，防止逃避處罰 Re-apply them if the member leaves and rejoins, to prevent evasion | **這是唯一儲存在 Discord 以外的資料**：存放在我們主機上的 SQLite 資料庫，只有伺服器設定為「處罰身分組」的才會記錄，身分組被移除時立即刪除 **The only data stored outside Discord**: a SQLite database on our server, only for roles configured as punishment roles, deleted as soon as the role is removed |
+| 處罰身分組（使用者 ID 與身分組 ID）Punishment roles (user ID and role ID) | 成員退出再加入時自動補回，防止逃避處罰 Re-apply them if the member leaves and rejoins, to prevent evasion | **這是唯一儲存在 Discord 以外的資料**：存放在我們主機上的 SQLite 資料庫並靜態加密（使用者 ID 只保存 HMAC-SHA256 雜湊、身分組以 AES-256-GCM 加密，金鑰另外存放），只有伺服器設定為「處罰身分組」的才會記錄，身分組被移除時立即刪除 **The only data stored outside Discord**: a SQLite database on our server, encrypted at rest (user IDs are kept only as HMAC-SHA256 hashes and roles are AES-256-GCM encrypted, with keys stored separately), only for roles configured as punishment roles, deleted as soon as the role is removed |
 | 自訂狀態文字（Presence）Custom status text (presence) | 偵測自訂狀態中的詐騙網址、外部邀請或詐騙話術 Detect scam links, external invites or scam wording in custom statuses | 只在記憶體比對，不保存；被偵測到時以 Discord 訊息形式通報到管理員頻道。不讀取、不保存上線狀態、正在玩的遊戲或其他活動 Checked in memory and never stored; flagged statuses are reported to the staff channel. Online status, games and other activities are not read or stored |
 
 我們**不會**：將訊息內容、名稱或狀態儲存到 Discord 以外的地方（上表的處罰身分組除外）、出售或分享給第三方、用於訓練任何機器學習或 AI 模型、用於廣告或使用者追蹤。
@@ -35,6 +35,11 @@ All detections are advisory: apart from external invites and known scam links be
 To recognise scam links, the bot periodically downloads a public scam-domain list ([Discord-AntiScam/scam-links](https://github.com/Discord-AntiScam/scam-links)). Matching happens locally; **no message content or user data is sent to the list provider**.
 
 ## 刪除資料 / Data removal
+
+要求刪除與你有關的資料：在 ∞ 遊玩伺服器聯絡任一位管理員，或來信 haco@lazco.tw（請附上你的 Discord 使用者 ID）。我們會在 7 天內刪除，並移除你在本機器人資料庫中的所有紀錄。
+
+To request deletion of data about you, contact any moderator in the ∞ 遊玩 server or email haco@lazco.tw with your Discord user ID. We will delete it within 7 days, including every record about you in the bot's database.
+
 
 通報與管理紀錄是伺服器內的一般 Discord 訊息，伺服器管理員可以隨時刪除；處罰身分組紀錄會在身分組移除時自動刪除。如需協助，請在伺服器內聯絡管理員，或來信 haco@lazco.tw。
 
