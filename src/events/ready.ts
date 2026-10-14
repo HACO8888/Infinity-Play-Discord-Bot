@@ -1,4 +1,5 @@
 import { Events } from "discord.js";
+import { setFooterIcon } from "../brand.ts";
 import { startScamDomainRefresh } from "../moderation/scamDomains.ts";
 import { config } from "../runtime.ts";
 import { defineEvent } from "../types.ts";
@@ -8,6 +9,7 @@ export default defineEvent({
   once: true,
   async execute(client) {
     console.log(`Ready! Logged in as ${client.user.tag}`);
+    setFooterIcon(client.user.displayAvatarURL({ extension: "png", size: 64 }));
     startScamDomainRefresh();
 
     // 啟動時把指令同步到本 shard 負責的伺服器，不必再手動執行部署腳本
